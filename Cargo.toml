@@ -1,0 +1,22 @@
+[package]
+name = "todo"
+authors = ["Ryan Levick <me@ryanlevick.com>"]
+description = "A todo application written in spin"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = [ "cdylib" ]
+
+[dependencies]
+anyhow = "1"
+bytes = "1"
+http = "0.2"
+spin-sdk = { path = "../spin/sdk/rust" }
+wit-bindgen-rust = { git = "https://github.com/bytecodealliance/wit-bindgen", rev = "cb871cfa1ee460b51eb1d144b175b9aab9c50aba" }
+serde_qs = "0.12"
+serde_json = "1.0"
+serde = {  version = "1.0.26", features = ["derive"] }
+time = {  version = "0.3", features = ["serde-human-readable"] }
+
+[workspace]
