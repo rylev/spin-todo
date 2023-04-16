@@ -9,7 +9,6 @@ use spin_sdk::{
 /// A simple Spin HTTP component.
 #[http_component]
 fn handle_todo(req: Request) -> anyhow::Result<Response> {
-    println!("Handling");
     let router = http_router! {
         GET "/api/todos" => get_todos,
         POST "/api/todos/create" => create_todo,
@@ -107,8 +106,11 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
     let format = time::format_description::parse(DATE_FORMAT)?;
     let format = create.due_date.map(|d| d.format(&format).unwrap());
     let params = [
-        create.description.as_str(),
-        format.as_deref().unwrap_or("NULL"),
+        sqlite::DataTypeParam::Text(&create.description),
+        format
+            .as_deref()
+            .map(|s| sqlite::DataTypeParam::Text(s))
+            .unwrap_or(sqlite::DataTypeParam::Null),
     ];
     let statement = Statement::prepare(
         "INSERT INTO todos (description, due_date) VALUES(?, ?) RETURNING id;",
@@ -117,7 +119,7 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
 
     let conn = Connection::open()?;
     let response = conn.query(&statement)?.remove(0).values.remove(0);
-    let sqlite::DataType::Int64(id) = response else { anyhow::bail!("Expected i64 got {response:?}")};
+    let sqlite::DataTypeResult::Integer(id) = response else { anyhow::bail!("Expected i64 got {response:?}")};
     let todo = Todo {
         id: id as u32,
         description: create.description,
@@ -151,20 +153,20 @@ impl TryFrom<sqlite::Row> for Todo {
         let mut is_completed = None;
         for (i, v) in row.values.into_iter().enumerate() {
             match (i, v) {
-                (0, sqlite::DataType::Int64(i)) => id = Some(i as u32),
-                (1, sqlite::DataType::Str(d)) => description = Some(d),
-                (2, sqlite::DataType::Str(t)) => {
+                (0, sqlite::DataTypeResult::Integer(i)) => id = Some(i as u32),
+                (1, sqlite::DataTypeResult::Text(d)) => description = Some(d),
+                (2, sqlite::DataTypeResult::Text(t)) => {
                     let format = time::format_description::parse(DATE_FORMAT)?;
                     due_date = Some(Some(
                         time::Date::parse(&t, &format)
                             .with_context(|| format!("Corrupted due date value: {t}"))?,
                     ))
                 }
-                (2, sqlite::DataType::Null) => {
+                (2, sqlite::DataTypeResult::Null) => {
                     due_date = Some(None);
                 }
-                (3, sqlite::DataType::Int64(b)) => starred = Some(b != 0),
-                (4, sqlite::DataType::Int64(b)) => is_completed = Some(b != 0),
+                (3, sqlite::DataTypeResult::Integer(b)) => starred = Some(b != 0),
+                (4, sqlite::DataTypeResult::Integer(b)) => is_completed = Some(b != 0),
                 (i, v) => anyhow::bail!("unexpected row data {i}: {v:?} "),
             }
         }
