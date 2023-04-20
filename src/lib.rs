@@ -3,7 +3,7 @@ use serde::Serialize;
 use spin_sdk::{
     http::{Params, Request, Response},
     http_component, http_router,
-    sqlite::{self, Connection, Statement},
+    sqlite::{self, Connection},
 };
 
 /// A simple Spin HTTP component.
@@ -16,7 +16,7 @@ fn handle_todo(req: Request) -> anyhow::Result<Response> {
             println!("No handler for {} {}", req.uri(), req.method());
             Ok(http::Response::builder()
                 .status(http::StatusCode::NOT_FOUND)
-                .body(Some("{\"error\":\"not_found\"}".into()))
+                .body(Some(serde_json::json!({"error":"not_found"}).to_string().into()))
                 .unwrap())
         }
     };
@@ -53,7 +53,6 @@ pub fn get_todos(req: Request, _params: Params) -> anyhow::Result<Response> {
             .date()
             .format(&format)
             .unwrap();
-        println!("{today}");
         if due {
             format!("due_date <= '{today}'")
         } else {
@@ -75,11 +74,11 @@ pub fn get_todos(req: Request, _params: Params) -> anyhow::Result<Response> {
         (None, Some(incomplete)) => format!("WHERE {incomplete}"),
         (None, None) => String::new(),
     };
-    let statement = Statement::prepare(&format!("SELECT * FROM todos {w};"), &[])?;
 
-    let conn = Connection::open()?;
+    let conn = Connection::open("other")?;
+    let conn = Connection::open("default")?;
     let todos = conn
-        .query(&statement)?
+        .query(&format!("SELECT * FROM todos {w};"), &[])?
         .into_iter()
         .map(|r| -> anyhow::Result<Todo> { r.try_into() })
         .collect::<anyhow::Result<Vec<Todo>>>()?;
@@ -112,16 +111,15 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
             .map(|s| sqlite::DataTypeParam::Text(s))
             .unwrap_or(sqlite::DataTypeParam::Null),
     ];
-    let statement = Statement::prepare(
+
+    let conn = Connection::open("default")?;
+    let response = &conn.query(
         "INSERT INTO todos (description, due_date) VALUES(?, ?) RETURNING id;",
         params.as_slice(),
-    )?;
-
-    let conn = Connection::open()?;
-    let response = conn.query(&statement)?.remove(0).values.remove(0);
-    let sqlite::DataTypeResult::Integer(id) = response else { anyhow::bail!("Expected i64 got {response:?}")};
+    )?[0];
+    let Some(id) = response.geti(0) else { anyhow::bail!("Expected number got {response:?}")};
     let todo = Todo {
-        id: id as u32,
+        id,
         description: create.description,
         due_date: create.due_date,
         starred: false,
@@ -146,36 +144,22 @@ struct Todo {
 impl TryFrom<sqlite::Row> for Todo {
     type Error = anyhow::Error;
     fn try_from(row: sqlite::Row) -> std::result::Result<Self, Self::Error> {
-        let mut id = None;
-        let mut description = None;
-        let mut due_date = None;
-        let mut starred = None;
-        let mut is_completed = None;
-        for (i, v) in row.values.into_iter().enumerate() {
-            match (i, v) {
-                (0, sqlite::DataTypeResult::Integer(i)) => id = Some(i as u32),
-                (1, sqlite::DataTypeResult::Text(d)) => description = Some(d),
-                (2, sqlite::DataTypeResult::Text(t)) => {
-                    let format = time::format_description::parse(DATE_FORMAT)?;
-                    due_date = Some(Some(
-                        time::Date::parse(&t, &format)
-                            .with_context(|| format!("Corrupted due date value: {t}"))?,
-                    ))
-                }
-                (2, sqlite::DataTypeResult::Null) => {
-                    due_date = Some(None);
-                }
-                (3, sqlite::DataTypeResult::Integer(b)) => starred = Some(b != 0),
-                (4, sqlite::DataTypeResult::Integer(b)) => is_completed = Some(b != 0),
-                (i, v) => anyhow::bail!("unexpected row data {i}: {v:?} "),
-            }
-        }
+        let id = row.get("id").context("row has no id")?;
+        let description: &str = row.get("description").context("row has no description")?;
+        let due_date = row.get::<&str>("due_date");
+        let format = time::format_description::parse(DATE_FORMAT)?;
+        let due_date = due_date
+            .map(|dd| time::Date::parse(dd, &format))
+            .transpose()
+            .context("due_date is in wrong format")?;
+        let starred = row.get("starred").context("row has no starred")?;
+        let is_completed = row.get("is_completed").context("row has no is_completed")?;
         Ok(Self {
-            id: id.unwrap(),
-            description: description.unwrap(),
-            due_date: due_date.unwrap(),
-            starred: starred.unwrap(),
-            is_completed: is_completed.unwrap(),
+            id,
+            description: description.to_owned(),
+            due_date,
+            starred,
+            is_completed,
         })
     }
 }

@@ -9,6 +9,7 @@ version = "0.1.0"
 id = "todo"
 source = "target/wasm32-wasi/release/todo.wasm"
 allowed_http_hosts = []
+sqlite_databases = ["default"]
 [component.trigger]
 route = "/todos/..."
 [component.build]
