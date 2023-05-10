@@ -75,11 +75,10 @@ pub fn get_todos(req: Request, _params: Params) -> anyhow::Result<Response> {
         (None, None) => String::new(),
     };
 
-    let conn = Connection::open("other")?;
     let conn = Connection::open("default")?;
     let todos = conn
         .query(&format!("SELECT * FROM todos {w};"), &[])?
-        .into_iter()
+        .rows()
         .map(|r| -> anyhow::Result<Todo> { r.try_into() })
         .collect::<anyhow::Result<Vec<Todo>>>()?;
 
@@ -116,10 +115,10 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
     let response = &conn.query(
         "INSERT INTO todos (description, due_date) VALUES(?, ?) RETURNING id;",
         params.as_slice(),
-    )?[0];
-    let Some(id) = response.geti(0) else { anyhow::bail!("Expected number got {response:?}")};
+    )?.rows;
+    let Some(id) = response.get(0) else { anyhow::bail!("Expected number got {response:?}")};
     let todo = Todo {
-        id,
+        id: id.get(0).unwrap(),
         description: create.description,
         due_date: create.due_date,
         starred: false,
@@ -141,9 +140,9 @@ struct Todo {
     is_completed: bool,
 }
 
-impl TryFrom<sqlite::Row> for Todo {
+impl <'a> TryFrom<sqlite::Row<'a>> for Todo {
     type Error = anyhow::Error;
-    fn try_from(row: sqlite::Row) -> std::result::Result<Self, Self::Error> {
+    fn try_from(row: sqlite::Row<'a>) -> std::result::Result<Self, Self::Error> {
         let id = row.get("id").context("row has no id")?;
         let description: &str = row.get("description").context("row has no description")?;
         let due_date = row.get::<&str>("due_date");

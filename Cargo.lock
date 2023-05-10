@@ -206,6 +206,7 @@ dependencies = [
 [[package]]
 name = "spin-macro"
 version = "0.1.0"
+source = "git+https://github.com/fermyon/spin?branch=sqlite-host-component#24a76334be37ebbe9a858057acc6a431b36cea69"
 dependencies = [
  "anyhow",
  "bytes",
@@ -213,12 +214,12 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
- "wit-bindgen-rust",
 ]
 
 [[package]]
 name = "spin-sdk"
 version = "1.2.0-pre0"
+source = "git+https://github.com/fermyon/spin?branch=sqlite-host-component#24a76334be37ebbe9a858057acc6a431b36cea69"
 dependencies = [
  "anyhow",
  "bytes",
