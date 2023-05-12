@@ -104,11 +104,11 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
     let format = time::format_description::parse(DATE_FORMAT)?;
     let format = create.due_date.map(|d| d.format(&format).unwrap());
     let params = [
-        sqlite::DataTypeParam::Text(&create.description),
+        sqlite::ValueParam::Text(&create.description),
         format
             .as_deref()
-            .map(|s| sqlite::DataTypeParam::Text(s))
-            .unwrap_or(sqlite::DataTypeParam::Null),
+            .map(|s| sqlite::ValueParam::Text(s))
+            .unwrap_or(sqlite::ValueParam::Null),
     ];
 
     let conn = Connection::open("default")?;
