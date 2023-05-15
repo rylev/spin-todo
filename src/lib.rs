@@ -12,6 +12,8 @@ fn handle_todo(req: Request) -> anyhow::Result<Response> {
     let router = http_router! {
         GET "/api/todos" => get_todos,
         POST "/api/todos/create" => create_todo,
+        PATCH "/api/todos/:id" => update_todo,
+        DELETE "/api/todos/:id" => delete_todo,
         _   "/*"             => |req, _params| {
             println!("No handler for {} {}", req.uri(), req.method());
             Ok(http::Response::builder()
@@ -75,7 +77,7 @@ pub fn get_todos(req: Request, _params: Params) -> anyhow::Result<Response> {
         (None, None) => String::new(),
     };
 
-    let conn = Connection::open("default")?;
+    let conn = Connection::open_default()?;
     let todos = conn
         .query(&format!("SELECT * FROM todos {w};"), &[])?
         .rows()
@@ -111,11 +113,13 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
             .unwrap_or(sqlite::ValueParam::Null),
     ];
 
-    let conn = Connection::open("default")?;
-    let response = &conn.query(
-        "INSERT INTO todos (description, due_date) VALUES(?, ?) RETURNING id;",
-        params.as_slice(),
-    )?.rows;
+    let conn = Connection::open_default()?;
+    let response = &conn
+        .query(
+            "INSERT INTO todos (description, due_date) VALUES(?, ?) RETURNING id;",
+            params.as_slice(),
+        )?
+        .rows;
     let Some(id) = response.get(0) else { anyhow::bail!("Expected number got {response:?}")};
     let todo = Todo {
         id: id.get(0).unwrap(),
@@ -131,6 +135,41 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
         .unwrap())
 }
 
+#[derive(serde::Deserialize)]
+struct UpdateParams {
+    is_completed: bool,
+}
+
+pub fn update_todo(req: Request, params: Params) -> anyhow::Result<Response> {
+    let id = params.get("id").unwrap();
+    let update: UpdateParams = serde_json::from_slice(
+        req.body()
+            .as_ref()
+            .map(|b| -> &[u8] { &*b })
+            .unwrap_or_default(),
+    )?;
+    let params = [
+        sqlite::ValueParam::Integer(update.is_completed as i64),
+        sqlite::ValueParam::Integer(id.parse().unwrap()),
+    ];
+    let conn = Connection::open_default()?;
+    conn.execute(
+        "UPDATE todos SET is_completed = (?) WHERE ID = (?);",
+        params.as_slice(),
+    )?;
+
+    Ok(http::Response::builder().status(204).body(None).unwrap())
+}
+
+pub fn delete_todo(_req: Request, params: Params) -> anyhow::Result<Response> {
+    let id = params.get("id").unwrap();
+    let params = [sqlite::ValueParam::Integer(id.parse().unwrap())];
+    let conn = Connection::open_default()?;
+    conn.execute("DELETE FROM todos WHERE ID = (?);", params.as_slice())?;
+
+    Ok(http::Response::builder().status(204).body(None).unwrap())
+}
+
 #[derive(Serialize)]
 struct Todo {
     id: u32,
@@ -140,7 +179,7 @@ struct Todo {
     is_completed: bool,
 }
 
-impl <'a> TryFrom<sqlite::Row<'a>> for Todo {
+impl<'a> TryFrom<sqlite::Row<'a>> for Todo {
     type Error = anyhow::Error;
     fn try_from(row: sqlite::Row<'a>) -> std::result::Result<Self, Self::Error> {
         let id = row.get("id").context("row has no id")?;
