@@ -1,0 +1,42 @@
+<!doctype html>
+<html data-framework="vue">
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/todomvc-app-css@2.1.2/index.css">
+    <title>Spin TODO</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="todoapp" v-cloak>
+        <header class="header">
+            <h1>todos</h1>
+            <input class="new-todo" autofocus autocomplete="off" placeholder="Add a todo" v-model="todo"
+                @keyup.enter="addTodo">
+        </header>
+        <section class="main" v-show="todos.length">
+            <ul class="todo-list">
+                <li class="todo" v-for="todo in todos" :key="todo.id" :class="{completed: todo.is_completed}">
+                    <div class="view">
+                        <input class="toggle" type="checkbox" :value="todo.is_completed"
+                            @input="() => toggleComplete(todo)">
+                        <label>{{todo.description}}</label>
+                        <button class="destroy" @click="deleteTodo(todo)"></button>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </section>
+    <footer class="info">
+        <p>See more information about Spin at <a href="https://developer.fermyon.com">developer.fermyon.com</a></p>
+    </footer>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
