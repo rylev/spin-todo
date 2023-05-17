@@ -79,7 +79,7 @@ pub fn get_todos(req: Request, _params: Params) -> anyhow::Result<Response> {
 
     let conn = Connection::open_default()?;
     let todos = conn
-        .query(&format!("SELECT * FROM todos {w};"), &[])?
+        .execute(&format!("SELECT * FROM todos {w};"), &[])?
         .rows()
         .map(|r| -> anyhow::Result<Todo> { r.try_into() })
         .collect::<anyhow::Result<Vec<Todo>>>()?;
@@ -115,7 +115,7 @@ pub fn create_todo(req: Request, _params: Params) -> anyhow::Result<Response> {
 
     let conn = Connection::open_default()?;
     let response = &conn
-        .query(
+        .execute(
             "INSERT INTO todos (description, due_date) VALUES(?, ?) RETURNING id;",
             params.as_slice(),
         )?

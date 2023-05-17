@@ -12,7 +12,7 @@ crate-type = [ "cdylib" ]
 anyhow = "1"
 bytes = "1"
 http = "0.2"
-spin-sdk = { git = "https://github.com/fermyon/spin", branch = "sqlite-host-component", features=["experimental-sqlite"] }
+spin-sdk = { git = "https://github.com/fermyon/spin", branch = "sqlite-host-component" }
 wit-bindgen-rust = { git = "https://github.com/bytecodealliance/wit-bindgen", rev = "cb871cfa1ee460b51eb1d144b175b9aab9c50aba" }
 serde_qs = "0.12"
 serde_json = "1.0"
