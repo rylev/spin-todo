@@ -7,7 +7,7 @@ version = "0.1.0"
 
 [[component]]
 id = "todo-api"
-source = "/home/rylev/.cargo_target/wasm32-wasi/release/todo.wasm"
+source = "target/wasm32-wasi/release/todo.wasm"
 allowed_http_hosts = []
 sqlite_databases = ["default"]
 [component.trigger]
