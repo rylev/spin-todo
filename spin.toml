@@ -7,7 +7,7 @@ version = "0.1.0"
 
 [[component]]
 id = "todo-api"
-source = "$CARGO_TARGET_DIR/wasm32-wasi/release/todo.wasm"
+source = "target/wasm32-wasi/release/todo.wasm"
 allowed_http_hosts = []
 sqlite_databases = ["default"]
 [component.trigger]

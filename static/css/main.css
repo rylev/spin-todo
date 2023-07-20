@@ -1,0 +1,111 @@
+html, body {
+    min-height: 100vh;
+    width: 100%;
+    background-color: #0E092D;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+section.todoapp {
+    flex-grow: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+header {
+    text-align: center;
+    color: #A87CE6;
+    width: 100%;
+}
+
+header input {
+    width: 60%;
+    max-width: 800px;
+    height: 2rem;
+    border-radius: 0.67rem;
+    border: none;
+    outline: none;
+    padding: 0.5rem 1rem;
+}
+
+footer {
+    background-color: #384687;
+    color: #E7D3F2;
+    width: 100%;
+    text-align: center;
+}
+
+footer a {
+    color: #C5FFF1;
+}
+.main {
+    width: 100%;
+
+}
+.todo-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+}
+
+.todo-list .todo {
+    width: 60%;
+    padding: 0.5rem 1rem;
+    max-width: 800px;
+    height: 3rem;
+    background-color: #C5FFF1;
+    border-bottom: 1px solid;
+    display: flex;
+    align-items: center;
+}
+
+.todo .view {
+    width: 100%;
+    display: flex;
+    padding: 1rem;
+}
+
+.todo .view label {
+    flex-grow: 1;
+    margin: 0 1rem;
+}
+
+.todo .view button {
+    background: transparent;
+    outline: none;
+    border: none;
+}
+
+.todo .view input{
+    width: 15px;
+    height: 15px;
+}
+
+.todo .view input:checked + label{
+    text-decoration: line-through;
+}
+
+.todo .view button svg{
+    width: 15px;
+}
+
+.cls-1 {
+    fill-rule: evenodd;
+}
+
+.todo-list .todo:nth-child(1) {
+    border-radius: 0.67rem 0.67rem 0 0;
+}
+
+.todo-list .todo:last-child {
+    border-radius: 0 0 0.67rem 0.67rem;
+}
+
+.todo-list .todo:only-child {
+    border-radius: 0.67rem;
+}
