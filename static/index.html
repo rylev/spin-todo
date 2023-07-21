@@ -3,8 +3,6 @@
 
 <head>
     <meta charset="utf-8">
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/todomvc-app-css@2.1.2/index.css"> -->
-    <!-- <link rel="stylesheet" href="css/styles.css"> -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap" rel="stylesheet">
@@ -27,9 +25,9 @@
         </header>
         <section class="main" v-show="todos.length">
             <ul class="todo-list">
-                <li class="todo" v-for="todo in todos" :key="todo.id" :class="{completed: todo.is_completed}">
+                <li class="todo" v-for="todo in todos" :key="todo.id">
                     <div class="view">
-                        <input class="toggle" type="checkbox" :value="todo.is_completed"
+                        <input class="toggle" type="checkbox" :checked="todo.is_completed"
                             @input="() => toggleComplete(todo)">
                         <label>{{todo.description}}</label>
                         <button class="destroy" @click="deleteTodo(todo)">
